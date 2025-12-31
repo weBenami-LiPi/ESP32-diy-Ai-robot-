@@ -8,18 +8,19 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-#include "action_queue.h"
-#include "api_config.h"
-#include "audio_manager.h"
-#include "bitmaps.h"
-#include "body_sync.h"
-#include "config.h"
-#include "hardware_ctrl.h"
-#include "logger.h"
-#include "openai_manager.h"
-#include "persistent_config.h"
-#include "tts_manager.h"
-#include "web_server_manager.h"
+#include "src/audio/audio_manager.h"
+#include "src/audio/tts_manager.h"
+#include "src/config/api_config.h"
+#include "src/config/config.h"
+#include "src/config/persistent_config.h"
+#include "src/core/action_queue.h"
+#include "src/core/logger.h"
+#include "src/hardware/body_sync.h"
+#include "src/hardware/hardware_ctrl.h"
+#include "src/network/openai_manager.h"
+#include "src/network/web_server_manager.h"
+#include "src/vision/bitmaps.h"
+
 
 Adafruit_SSD1306 display(128, 64, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET,
                          OLED_CS);
