@@ -80,22 +80,52 @@ public:
     if (dist > 0 && dist < 25) {
       moveRobot("STOP");
     } else {
-      if (now - lastBodyPulse > random(300, 1500)) {
+      // Body Pulse Sync
+      int pulseInterval = random(300, 1500);
+      if (currentEmotion == ANGRY_RAGE || currentEmotion == PARTY)
+        pulseInterval = random(150, 600);
+      else if (currentEmotion == SAD || currentEmotion == SLEEP)
+        pulseInterval = random(2000, 4000);
+
+      if (now - lastBodyPulse > pulseInterval) {
         lastBodyPulse = now;
         startPulseBody();
       }
     }
-    if (now - lastHeadNod > random(500, 1200)) {
+
+    // Head Movement Sync
+    int headInterval = random(500, 1200);
+    if (currentEmotion == ANGRY_RAGE)
+      headInterval = random(200, 500);
+    else if (currentEmotion == SAD)
+      headInterval = random(1500, 3000);
+
+    if (now - lastHeadNod > headInterval) {
       lastHeadNod = now;
       int baseAngle = 90;
+
+      // Emotion-based vertical bias
+      int verticalBias = 0;
+      if (currentEmotion == SAD || currentEmotion == SLEEP)
+        verticalBias = -20; // Look down
+      else if (currentEmotion == ANGRY_RAGE || currentEmotion == SHOCKED)
+        verticalBias = 10; // Perky
+
       if (targetPupilX < -2)
         baseAngle = 135;
       else if (targetPupilX > 2)
         baseAngle = 45;
       else
         baseAngle = 90;
-      int nodOffset = random(-15, 15);
-      setHeadAngle(baseAngle + nodOffset);
+
+      int nodRange = 15;
+      if (currentEmotion == ANGRY_RAGE)
+        nodRange = 30; // Bigger jitter
+      else if (currentEmotion == SAD)
+        nodRange = 5; // Subtle
+
+      int nodOffset = random(-nodRange, nodRange + 1);
+      setHeadAngle(baseAngle + nodOffset + verticalBias);
     }
   }
 };

@@ -25,7 +25,7 @@ public:
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", "Bearer " + globalConfig.config.openai_key);
 
-    StaticJsonDocument<2048> reqDoc;
+    DynamicJsonDocument reqDoc(4096);
     reqDoc["model"] = globalConfig.config.openai_model;
     JsonArray messages = reqDoc.createNestedArray("messages");
 
@@ -37,7 +37,7 @@ public:
     // Load History from SPIFFS
     if (SPIFFS.exists("/history.json")) {
       File f = SPIFFS.open("/history.json", "r");
-      StaticJsonDocument<1536> histDoc;
+      DynamicJsonDocument histDoc(3072);
       deserializeJson(histDoc, f);
       f.close();
       JsonArray hArr = histDoc.as<JsonArray>();
@@ -77,15 +77,15 @@ public:
   }
 
   void updateHistory(String u, String b) {
-    StaticJsonDocument<1536> histDoc;
+    DynamicJsonDocument histDoc(3072);
     if (SPIFFS.exists("/history.json")) {
       File f = SPIFFS.open("/history.json", "r");
       deserializeJson(histDoc, f);
       f.close();
     }
     JsonArray hArr = histDoc.as<JsonArray>();
-    if (hArr.size() >= 10)
-      hArr.remove(0); // Max 5 cycles (10 msgs)
+    if (hArr.size() >= 20) // Increased to 20 messages (10 cycles)
+      hArr.remove(0);
 
     JsonObject uMsg = hArr.createNestedObject();
     uMsg["r"] = "user";

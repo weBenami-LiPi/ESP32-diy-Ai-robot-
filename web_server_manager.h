@@ -67,77 +67,103 @@ String cleanMessage(String text) {
   return out;
 }
 
-void processAndSpeak(String text) {
-  int startIdx = 0;
-  while (startIdx < text.length()) {
-    int tagStart = text.indexOf('[', startIdx);
-    if (tagStart == -1) {
-      String segment = text.substring(startIdx);
-      segment.trim();
-      if (segment.length() > 0 && TTS.enabled && TTS.downloadTTS(segment))
-        TTS.playLastTTS();
-      break;
-    }
-    if (tagStart > startIdx) {
-      String segment = text.substring(startIdx, tagStart);
-      segment.trim();
-      if (segment.length() > 0 && TTS.enabled && TTS.downloadTTS(segment))
-        TTS.playLastTTS();
-    }
-    int tagEnd = text.indexOf(']', tagStart);
-    if (tagEnd == -1)
-      break;
-    String tag = text.substring(tagStart, tagEnd + 1);
-    setEmotion(getEmotionFromTag(tag));
+#include "action_queue.h"
 
-    // After setting emotion, we still need to handle the remaining text
-    // But we should NOT speak the tag name.
-    // The current loop structure already skips the tag's range via startIdx.
-    startIdx = tagEnd + 1;
-  }
+void handleStopTalk() {
+  TTS.stop();
+  server.send(200, "text/plain", "Stopped");
 }
 
-// Updated speaking logic to return success status for WebUI fallback
+// ... (other includes are fine, this is just to ensure it's there or I assume
+// it's added at top)
+
 bool processAndSpeakOptimized(String text) {
+  // Wake up immediately if receiving a message
+  if (currentEmotion == SLEEP) {
+    setEmotion(NEUTRAL);
+  }
+
+  std::vector<RobotAction> tempQueue;
   bool overallSuccess = true;
   int startIdx = 0;
+  static int reqCounter = 0;
+  reqCounter++;
+
   while (startIdx < text.length()) {
     int tagStart = text.indexOf('[', startIdx);
-    if (tagStart == -1) {
-      String segment = text.substring(startIdx);
+
+    // Handle Text Segment before Tag (or to end)
+    String segment = "";
+    int endOfSegment = (tagStart == -1) ? text.length() : tagStart;
+
+    if (endOfSegment > startIdx) {
+      segment = text.substring(startIdx, endOfSegment);
       segment.trim();
-      if (segment.length() > 0 && TTS.enabled) {
+
+      if (segment.length() > 0) {
         String cleanSeg = cleanMessage(segment);
         if (cleanSeg.length() > 0) {
-          if (!TTS.downloadTTS(cleanSeg))
+          bool downloadSuccess = false;
+          String fname =
+              "/tts_" + String(reqCounter) + "_" + String(millis()) + ".mp3";
+
+          if (TTS.enabled && TTS.downloadTTS(cleanSeg, fname)) {
+            downloadSuccess = true;
+          }
+
+          if (downloadSuccess) {
+            RobotAction act;
+            act.type = ACTION_PLAY_AUDIO;
+            act.payload = fname;
+            tempQueue.push_back(act);
+          } else {
             overallSuccess = false;
-          else
-            TTS.playLastTTS();
+            // Fallback: Simulate lip sync for browser audio
+            RobotAction act;
+            act.type = ACTION_SIMULATE_TALK;
+            // Estimate 85ms per character for better sync (revised from 150ms)
+            act.durationMs = cleanSeg.length() * 85;
+            tempQueue.push_back(act);
+          }
         }
       }
+    }
+
+    if (tagStart == -1)
       break;
-    }
-    if (tagStart > startIdx) {
-      String segment = text.substring(startIdx, tagStart);
-      segment.trim();
-      if (segment.length() > 0 && TTS.enabled) {
-        String cleanSeg = cleanMessage(segment);
-        if (cleanSeg.length() > 0) {
-          if (!TTS.downloadTTS(cleanSeg))
-            overallSuccess = false;
-          else
-            TTS.playLastTTS();
-        }
-      }
-    }
+
     int tagEnd = text.indexOf(']', tagStart);
     if (tagEnd == -1)
-      break;
+      break; // Malformed tag
+
     String tag = text.substring(tagStart, tagEnd + 1);
-    setEmotion(getEmotionFromTag(tag));
+    if (tag.startsWith("[CMD:")) {
+      String cmd = tag.substring(5, tag.length() - 1);
+      RobotAction cmdAct;
+      cmdAct.type = ACTION_ROBOT_CMD;
+      cmdAct.payload = cmd;
+      tempQueue.push_back(cmdAct);
+    } else {
+      RobotAction emoAct;
+      emoAct.type = ACTION_SET_EMOTION;
+      emoAct.emotionVal = getEmotionFromTag(tag);
+      tempQueue.push_back(emoAct);
+    }
+
     startIdx = tagEnd + 1;
   }
+
+  if (!tempQueue.empty()) {
+    for (const auto &act : tempQueue) {
+      globalQueue.push_back(act);
+    }
+  }
   return overallSuccess;
+}
+
+void processAndSpeak(String text) {
+  // Use the optimized version logic but ignore return value
+  processAndSpeakOptimized(text);
 }
 
 void handleChat() {
@@ -149,15 +175,24 @@ void handleChat() {
   logChat("User: " + msg);
   lastInteractionTime = millis();
 
+  // Wake the robot if it was sleeping
+  if (currentEmotion == SLEEP) {
+    setEmotion(WAKE_UP);
+  }
+
   String reply = openai.sendText(msg, globalConfig.config.system_prompt);
   String robotLog = "Vextor: " + reply;
   logChat(robotLog);
 
+  // CRITICAL: pass the ORIGINAL reply with tags so the robot can set
+  // emotions/lip sync
   bool hwTtsSuccess = processAndSpeakOptimized(reply);
 
   StaticJsonDocument<1024> doc;
-  doc["reply"] = cleanMessage(reply);
-  doc["tts_failed"] = !hwTtsSuccess; // Signal WebUI if hardware TTS failed
+  doc["reply"] =
+      reply; // Include tags for browser to handle if needed, or robot logic
+  doc["clean_reply"] = cleanMessage(reply); // For display in Chat UI
+  doc["tts_failed"] = !hwTtsSuccess;
   String response;
   serializeJson(doc, response);
   server.send(200, "application/json", response);
@@ -305,7 +340,8 @@ void setupWebServer() {
   server.on("/clear_chat", handleClearChat);
   server.on("/clear_loc", handleClearLoc);
   server.on("/get_config", handleGetConfig);
-  server.on("/save_config", HTTP_POST, handleSaveConfig);
+  server.on("/save_config", handleSaveConfig);
+  server.on("/stop_talk", handleStopTalk);
 
   server.begin();
   logChat("Web Server started");
