@@ -8,6 +8,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
+#include "action_queue.h"
 #include "api_config.h"
 #include "audio_manager.h"
 #include "bitmaps.h"
@@ -25,6 +26,8 @@ Adafruit_SSD1306 display(128, 64, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET,
 ConfigManager globalConfig;
 OpenAIManager openai;
 Servo headServo;
+std::vector<RobotAction> globalQueue;
+
 int currentHeadAngle = 90;
 bool isTalkingNow = false;
 Emotion currentEmotion = NEUTRAL;
@@ -42,6 +45,33 @@ void setEmotion(Emotion e) {
   currentEmotion = e;
   currentFrame = 0;
   lastEmotionUpdate = millis();
+}
+
+void handleActionQueue() {
+  if (TTS.isPlaying)
+    return;
+
+  while (!globalQueue.empty()) {
+    RobotAction act = globalQueue.front();
+    if (act.type == ACTION_SET_EMOTION) {
+      setEmotion(act.emotionVal);
+      globalQueue.erase(globalQueue.begin());
+    } else if (act.type == ACTION_PLAY_AUDIO) {
+      TTS.playFile(act.payload);
+      globalQueue.erase(globalQueue.begin());
+      break;
+    } else if (act.type == ACTION_SIMULATE_TALK) {
+      TTS.simulateTalk(act.durationMs);
+      globalQueue.erase(globalQueue.begin());
+      break;
+    } else if (act.type == ACTION_ROBOT_CMD) {
+      moveRobot(act.payload);
+      globalQueue.erase(globalQueue.begin());
+      // Don't break, allow other actions like emotion to happen simultaneously
+    } else {
+      globalQueue.erase(globalQueue.begin());
+    }
+  }
 }
 
 void setup() {
@@ -108,7 +138,9 @@ void loop() {
   }
 
   TTS.loop();
-  bool talk = TTS.isPlaying;
+  handleActionQueue();
+  updatePulseBody();
+  bool talk = TTS.isPlaying || TTS.isSimulatingTalk;
   isTalkingNow = talk;
   BodySync.setSpeaking(talk);
   BodySync.update();
@@ -132,13 +164,19 @@ void loop() {
     lastInteractionTime = now;
   }
 
-  if (now - lastInteractionTime > 120000) { // 2 minutes
+  if (now - lastInteractionTime > 120000 &&
+      currentEmotion != SLEEP) { // 2 minutes
     setEmotion(SLEEP);
+  }
+
+  // Auto-transition from WAKE_UP to NEUTRAL
+  if (currentEmotion == WAKE_UP && (now - lastEmotionUpdate > 1500)) {
+    setEmotion(NEUTRAL);
   }
 
   // Natural Curiosity & Saccade System
   static unsigned long lastEyeMove = 0;
-  static unsigned long nextEyeMove = 2000;
+  static unsigned long nextEyeMove = 80000; // 40x slower than 2000
   static int eyeMoveSpeed = 2;
 
   if (isTalkingNow || currentEmotion != NEUTRAL) {
@@ -150,8 +188,8 @@ void loop() {
     if (now - lastEyeMove > nextEyeMove) {
       lastEyeMove = now;
 
-      // Decision: Much lower saccade chance (20%) to reduce jitter
-      bool isSaccade = random(100) < 20;
+      // Decision: Extreme low saccade chance (less than 1%) for natural feel
+      bool isSaccade = random(1000) < 5;
       eyeMoveSpeed =
           isSaccade ? 2 : 1; // Slower speed: 2 for saccade, 1 for drift
 
@@ -166,7 +204,8 @@ void loop() {
       }
 
       // Longer Interest Duration for "Steady" feel
-      nextEyeMove = random(3000, 7000); // Slower updates (was 2000-6000)
+      // 40x Slower updates (was 3000-7000ms -> approx 120,000-280,000ms)
+      nextEyeMove = random(120000, 280000);
     }
   }
 
@@ -188,9 +227,12 @@ void loop() {
     renderEmotionFrame(display, currentEmotion, currentFrame++);
   }
 
-  if (currentEmotion != NEUTRAL && currentEmotion != SLEEP && !isTalkingNow &&
-      millis() - lastEmotionUpdate > 6000) {
-    setEmotion(NEUTRAL);
+  if (currentEmotion != NEUTRAL && currentEmotion != SLEEP && !isTalkingNow) {
+    if (currentEmotion == WINK && currentFrame >= 6) {
+      setEmotion(NEUTRAL);
+    } else if (millis() - lastEmotionUpdate > 6000) {
+      setEmotion(NEUTRAL);
+    }
   }
 
   if (autoPilotActive) {

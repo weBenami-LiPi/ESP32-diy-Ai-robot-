@@ -22,10 +22,12 @@ public:
     // Audio hardware setup removed to fix compilation issues
   }
 
-  bool downloadTTS(String text) {
+  bool downloadTTS(String text, String filename = "/tts.mp3") {
     if (WiFi.status() != WL_CONNECTED)
       return false;
-    stop();
+    // Don't stop current playback here if we are pre-buffering!
+    // But since we are downloading upfront, it's fine.
+
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
@@ -53,7 +55,7 @@ public:
     if (httpCode == 200) {
       int len = http.getSize();
       WiFiClient *stream = http.getStreamPtr();
-      File f = SPIFFS.open("/tts.mp3", "w");
+      File f = SPIFFS.open(filename, "w");
       if (!f) {
         http.end();
         return false;
@@ -82,29 +84,59 @@ public:
   }
 
   File ttsFile;
+  String currentFilename = "";
 
-  void playLastTTS() {
+  void playFile(String filename) {
     if (ttsFile)
       ttsFile.close();
-    ttsFile = SPIFFS.open("/tts.mp3", "r");
+
+    if (!SPIFFS.exists(filename))
+      return;
+
+    ttsFile = SPIFFS.open(filename, "r");
     if (!ttsFile)
       return;
 
+    currentFilename = filename;
     isPlaying = true;
     talkStartTime = millis();
-    logChat("Playing non-blocking TTS...");
+    logChat("Playing: " + filename);
+  }
+
+  void playLastTTS() { playFile("/tts.mp3"); }
+
+  bool isSimulatingTalk = false;
+  unsigned long simulationDuration = 0;
+
+  void simulateTalk(int durationMs) {
+    if (isPlaying)
+      return;
+    isSimulatingTalk = true;
+    simulationDuration = durationMs;
+    talkStartTime = millis();
+    logChat("Simulating talk for " + String(durationMs) + "ms");
   }
 
   void stop() {
     isPlaying = false;
+    isSimulatingTalk = false;
     if (ttsFile)
       ttsFile.close();
-    if (SPIFFS.exists("/tts.mp3")) {
-      SPIFFS.remove("/tts.mp3");
+    if (currentFilename.length() > 0 && SPIFFS.exists(currentFilename)) {
+      SPIFFS.remove(currentFilename);
+      currentFilename = "";
     }
   }
 
   void loop() {
+    if (isSimulatingTalk) {
+      if (millis() - talkStartTime > simulationDuration) {
+        stop();
+        logChat("Finished simulated talk");
+      }
+      return;
+    }
+
     if (!isPlaying)
       return;
 

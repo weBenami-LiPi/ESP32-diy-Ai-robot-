@@ -20,7 +20,8 @@ enum Emotion {
   SKEPTICAL,   // 🤨
   FRUSTRATED,  // 😤
   ANGEL,       // 😇
-  CRYING       // 😭
+  CRYING,      // 😭
+  WAKE_UP      // 😲 (New)
 };
 
 extern Emotion currentEmotion;
@@ -44,9 +45,9 @@ extern void setEmotion(Emotion e);
 
 void drawStandardEye(Adafruit_SSD1306 &d, int x, int y, int w, int h, int pX,
                      int pY) {
-  // Micro-saccades (tiny jitters for realism)
+  // Micro-saccades (ultra-rare jitters for extreme realism)
   static int microX = 0, microY = 0;
-  if (random(100) < 15) {
+  if (random(1000) < 5) { // 30x less frequent than 15%
     microX = random(-1, 2);
     microY = random(-1, 2);
   }
@@ -58,9 +59,14 @@ void drawStandardEye(Adafruit_SSD1306 &d, int x, int y, int w, int h, int pX,
   else {
     int top = 28 - h;
     d.fillRoundRect(x, y + top, w, h, 8, SSD1306_WHITE);
-    // Only draw pupil if eye is sufficiently open
+    // Draw Pupil & Light Effect
     if (h > 12) {
-      d.fillCircle(x + w / 2 + pX, y + top + h / 2 + pY, 4, SSD1306_BLACK);
+      int px = x + w / 2 + pX;
+      int py = y + top + h / 2 + pY;
+      // Pupil (Black part)
+      d.fillCircle(px, py, 4, SSD1306_BLACK);
+      // Light Effect / Gleam (Small white highlight)
+      d.fillCircle(px - 1, py - 1, 1, SSD1306_WHITE);
     }
   }
 }
@@ -165,25 +171,40 @@ void renderEmotionFrame(Adafruit_SSD1306 &d, Emotion emo, int frame) {
     d.fillRect(lx, ey + 18, 24, 3, SSD1306_WHITE);
     d.fillRect(rx, ey + 18, 24, 3, SSD1306_WHITE);
     {
+      d.setTextSize(1);
+      d.setTextColor(SSD1306_WHITE);
       for (int i = 0; i < 3; i++) {
-        int pos = (frame + i * 14) % 50;
-        int zY = ey - 5 - pos;
-        int zX = cx + (i * 10) + (pos / 2);
-        if (zY < ey + 5 && zY > -5) {
+        int pos = (frame + i * 15) % 60;
+        int zY = ey - pos;
+        int zX = cx + 10 + (i * 12) + (pos / 4);
+        if (zY > -10 && zY < 64) {
           d.setCursor(zX, zY);
-          d.setTextSize(1);
-          d.write(i == 0 ? 'Z' : 'z');
+          d.print(i == 0 ? "Z" : "z");
         }
       }
     }
-    d.fillCircle(cx, 52, isTalkingNow ? 3 : (3 + (frame % 30 < 15 ? 0 : 2)),
-                 SSD1306_WHITE);
+    if (isTalkingNow) {
+      d.fillRoundRect(cx - 8, 52, 16, mouthH, 4, SSD1306_WHITE);
+    } else {
+      d.fillCircle(cx, 52, (3 + (frame % 30 < 15 ? 0 : 2)), SSD1306_WHITE);
+    }
     break;
 
-  case WINK: { // Subtle open eye pulse
-    int blink = (frame % 30 < 2) ? 2 : 24;
-    drawStandardEye(d, lx, ey, 24, blink, 0, 0);
-    d.fillRect(rx, ey + 14, 24, 4, SSD1306_WHITE); // Wink Right
+  case WINK: { // Fast Single-Eye Wink (Right Eye)
+    // Left eye stays normal
+    drawStandardEye(d, lx, ey, 24, EYE_HEIGHT, pupilX, pupilY);
+
+    // Right eye winks in 0.3s (approx 6-7 frames at 50ms interval)
+    // Frame sequence: 0:open, 1:closing, 2:closed, 3:closed, 4:opening, 5:open
+    int winkHeight = EYE_HEIGHT;
+    if (frame == 1 || frame == 4)
+      winkHeight = EYE_HEIGHT / 2;
+    else if (frame == 2 || frame == 3)
+      winkHeight = 2; // Closed
+    else if (frame >= 5)
+      winkHeight = EYE_HEIGHT;
+
+    drawStandardEye(d, rx, ey, 24, winkHeight, 0, 0);
     d.fillRoundRect(cx - 10, 50, 20, mouthH, 2, SSD1306_WHITE);
   } break;
 
@@ -211,7 +232,7 @@ void renderEmotionFrame(Adafruit_SSD1306 &d, Emotion emo, int frame) {
     d.fillTriangle(lx, ey + 8, lx + 24, ey + 18, lx, ey + 28, SSD1306_WHITE);
     d.fillTriangle(rx + 24, ey + 8, rx, ey + 18, rx + 24, ey + 28,
                    SSD1306_WHITE);
-    d.fillRoundRect(cx - 12, 48 + jitter, 24, isTalkingNow ? 10 : 8, 3,
+    d.fillRoundRect(cx - 12, 48 + jitter, 24, isTalkingNow ? mouthH + 4 : 8, 3,
                     SSD1306_WHITE);
   } break;
 
@@ -221,17 +242,15 @@ void renderEmotionFrame(Adafruit_SSD1306 &d, Emotion emo, int frame) {
     d.fillCircle(lx + 12, ey + 14, dil, SSD1306_BLACK);
     d.fillCircle(rx + 12, ey + 14, 10, SSD1306_WHITE);
     d.fillCircle(rx + 12, ey + 14, dil, SSD1306_BLACK);
-    d.drawCircle(cx, 52, 8 + (isTalkingNow ? 2 : 0), SSD1306_WHITE);
+    d.drawCircle(cx, 52, isTalkingNow ? (mouthH + 4) : 8, SSD1306_WHITE);
   } break;
 
   case SAD: { // 😢 - Sad Heavy Eyes + Single Tear + Lip Sync
     drawStandardEye(d, lx, ey, 24, 14, 0, 0);
     drawStandardEye(d, rx, ey, 24, 14, 0, 0);
 
-    // Single tear drop (Stops at frame 30)
-    int tY = frame;
-    if (tY > 30)
-      tY = 30;
+    // Single tear drop (Looping animation)
+    int tY = (frame % 40);
     d.fillCircle(lx + 4, ey + 18 + (tY / 2), 2, SSD1306_WHITE);
 
     if (isTalkingNow) {
@@ -394,20 +413,43 @@ void renderEmotionFrame(Adafruit_SSD1306 &d, Emotion emo, int frame) {
     }
   } break;
 
-  case CRYING: { // 😭 - Sad Heavy Eyes + Stable Waterfall (One-shot)
+  case CRYING: { // 😭 - Sad Heavy Eyes + Looping Waterfall
     drawStandardEye(d, lx, ey, 24, 14, 0, 0);
     drawStandardEye(d, rx, ey, 24, 14, 0, 0);
 
-    // Tears waterfall animation (Stops at frame 32)
-    int flow = frame;
-    if (flow > 32)
-      flow = 32;
-    d.fillRect(lx + 4, ey + 20 + (flow / 2), 3, 6, SSD1306_WHITE);
-    d.fillRect(rx + 17, ey + 20 + (flow / 2), 3, 6, SSD1306_WHITE);
+    // Tears waterfall looping animation
+    for (int i = 0; i < 2; i++) {
+      int flow = (frame + (i * 15)) % 30;
+      int tY = ey + 18 + flow;
+      if (tY < 64) {
+        d.fillRect(lx + 4, tY, 3, 8, SSD1306_WHITE);
+        d.fillRect(rx + 17, tY, 3, 8, SSD1306_WHITE);
+      }
+    }
 
     // Mouth: Sad Oval
     d.fillRoundRect(cx - 10, mouthY, 20, isTalkingNow ? (10 + (frame % 4)) : 14,
                     8, SSD1306_WHITE);
+  } break;
+  case WAKE_UP: { // 😲 - Startle awake animation
+    // Screen Shake effect for the first 10 frames
+    int shakeX = (frame < 10) ? random(-3, 4) : 0;
+    int shakeY = (frame < 10) ? random(-3, 4) : 0;
+
+    lx += shakeX;
+    rx += shakeX;
+    ey += shakeY;
+    mouthY += shakeY;
+
+    // Wide Open Eyes
+    drawStandardEye(d, lx, ey, 24, 28, 0, 0); // Static 0,0 look for wide eyes
+    drawStandardEye(d, rx, ey, 24, 28, 0, 0);
+
+    // Mouth: Small shocked circle (o)
+    int mw = 12;
+    int mh = isTalkingNow ? (12 + (frame % 4)) : 12;
+    d.fillCircle(cx + shakeX, mouthY + 2, mw / 2 + 2, SSD1306_WHITE);
+    d.fillCircle(cx + shakeX, mouthY + 2, mw / 2, SSD1306_BLACK);
   } break;
 
   default: // NEUTRAL
