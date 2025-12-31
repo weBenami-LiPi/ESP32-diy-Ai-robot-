@@ -6,29 +6,32 @@
 
 Vextor (Vex) is a highly advanced, open-source AI desktop robot powered by the ESP32. It combines the intelligence of **OpenAI (ChatGPT)**, the realism of **ElevenLabs TTS**, and a unique, dynamic personality to create a truly living companion. 
 
-Unlike standard AI assistants, Vextor has a **core identity**: he is a robot with attitude (inspired by *Madara Uchiha*), he speaks Bengali (and English), and he never breaks character.
+Unlike standard AI assistants, Vextor has a **core identity**: he is a robot with attitude (inspired by *Madara Uchiha*), he speaks English (and Bengali), and he never breaks character.
 
 ---
 
-## 🇧🇩 ভেক্সটর গাইড: বিস্তারিত তথ্য (Ultimate Bengali Guide)
+## 🚀 Ultimate Vextor Guide: Detailed Information
 
-### ১. ভেক্সটর কি?
-ভেক্সটর একটি আস্ত ব্যক্তিত্ব সম্পন্ন এআই রোবট। এটি শুধু আপনার কথা শোনে না, বরং নিজের মেজাজ বা পরিস্থিতি অনুযায়ী প্রতিক্রিয়া দেখায়। এটি **Bengali + English** দুই ভাষাতেই পটু।
+### 1. What is Vextor?
+Vextor is a full-fledged personality-driven AI robot. He doesn't just listen to your words; he reacts based on his current mood and perspective. He is proficient in both **English and Bengali**.
 
-### ২. প্রধান বৈশিষ্ট্যসমূহ (Features):
-- **মাদারা পার্সোনালিটি**: এটি মাদারা উচিহার মতো গম্ভীর এবং শক্তিশালী মনোভাব দেখায়।
-- **মুভমেন্ট কমান্ড**: আপনি চ্যাটে `সামনে যাও` বা `বামে ঘুরো` বললে এটি নিজে নিজেই নড়াচড়া করবে।
-- **আবেগ ও এনিমেশন**: ১৬টিরও বেশি ইমোশন (রাগ, ভালোবাসা, হাসি, দুঃখ) এর জন্য আলাদা আলাদা চোখের এনিমেশন।
-- **স্মার্ট ওয়েক-আপ**: রোবটটি ঘুমিয়ে থাকলে আপনি মেসেজ দিলে এটি "স্টার্টল" হয়ে লাফ দিয়ে জেগে উঠবে।
-- **ওয়েব কন্ট্রোল ড্যাশবোর্ড**: কোনো অ্যাপ ছাড়াই ব্রাউজার থেকে রোবটকে কন্ট্রোল করা যায়।
+### 2. Core Features:
+- **Madara Persona**: He exhibits a serious, powerful, and slightly arrogant attitude inspired by Madara Uchiha.
+- **Movement Commands**: By typing commands like `Move forward` or `Turn left` in the chat, he will physically move his body.
+- **Emotions & Animations**: Over 16 distinct emotions (Angry, Love, Happy, Sad) with unique OLED eye animations.
+- **Pan-Tilt Head**: Dual servo system for smooth, realistic head movement (Up/Down/Left/Right).
+- **360° Rotation**: Agile 4WD movement allowing the robot to spin in place.
+- **Smooth 4WD Drive**: Updated 4-wheel drive logic for fluid movement and balanced turning.
+- **Smart Wake-Up**: If he is in sleep mode, receiving a message will "startle" him awake with a specific animation.
+- **Web Control Dashboard**: Control the robot from any browser on your network without needing a dedicated app.
 
-### ৩. কি কি হার্ডওয়্যার লাগবে (Hardware List):
-- **ESP32 Dev Board**: রোবটের মস্তিষ্ক।
-- **SSD1306 OLED**: রোবটের দোলনা বা মুখ।
-- **MAX98357A Amp**: কথা বলার জন্য ব্রেইন।
-- **SG90 Servo**: মাথা ঘুরানোর জন্য।
-- **Motor Driver + Gear Motors**: চলার জন্য।
-- **HC-SR04 & IR Sensors**: বাধা শনাক্ত করার জন্য।
+### 3. Hardware Requirements:
+- **ESP32 Dev Board**: The robot's primary brain.
+- **SSD1306 OLED**: His face and interface.
+- **MAX98357A Amp**: High-quality digital audio output.
+- **SG90 Servo**: For smooth head rotation.
+- **Motor Driver + 4x Gear Motors**: For powerful 4WD locomotion.
+- **HC-SR04 & IR Sensors**: For obstacle and edge detection.
 
 ---
 
@@ -38,6 +41,7 @@ Unlike standard AI assistants, Vextor has a **core identity**: he is a robot wit
 - **Fail-Safe Audio**: Intelligent switching between ElevenLabs and Web Speech API ensures zero downtime in vocal interactions.
 - **State-Persistent Memory**: Stores persona settings and chat history in SPIFFS (Internal Flash), allowing Vextor to "remember" you across reboots.
 - **Dynamic Lip-Sync**: Real-time vowel detection logic maps audio duration to mouth shapes for a natural talking effect.
+- **Smooth 4WD Ramping**: Intelligent PWM speed ramping ensures fluid movement and prevents sudden motor jerks.
 
 ---
 
@@ -99,8 +103,8 @@ Vextor is designed to be highly customizable. You can change his entire soul by 
 
 1. **Identity**: Define who he is (e.g., "You are a friendly cat robot").
 2. **Behavior**: Define how he acts (e.g., "Be very polite and use 'meow' at the end of every sentence").
-3. **Language**: Tell him which language to prefer (e.g., "Always reply in Sylheti Bengali").
-4. **Commands**: Ensure you keep the rule: "Use `[CMD:FORWARD]` when asked to move".
+3. **Language**: Tell him which language to prefer (e.g., "Always reply in English").
+4. **Commands**: Ensure you keep the rule: "Use `[CMD:FORWARD]`, `[CMD:BACK]`, `[CMD:LEFT]`, `[CMD:RIGHT]`, `[CMD:ROTATE_360_L]`, or `[CMD:ROTATE_360_R]` when asked to move".
 
 ---
 
@@ -132,33 +136,33 @@ Main/
 | **0.96" OLED Display** | The Face | SSD1306 (128x64) I2C |
 | **MAX98357A I2S Amp** | Digital Audio Output | High-quality I2S Amp |
 | **2x INMP441 Mic** | Optional Stereo Audio Input | I2S Digital Mics |
-| **SG90 Servo** | Head Movement | 180-degree Servo |
+| **2x SG90 Servos** | Pan-Tilt Head | 180-degree Servos |
 | **Motor Driver** | Wheel Control | L293D or L9110S |
-| **2x DC Gear Motors** | Locomotion | 6V TT Motors |
+| **4x DC Gear Motors** | 4WD Locomotion | 6V TT Motors (Paired) |
 | **HC-SR04** | Obstacle Detection | Ultrasonic Sensor |
 | **IR Sensors** | Edge/Table Detection | Digital IR Obstacle Sensor |
 | **3.7V - 7.4V Battery** | Power Source | Li-ion with Voltage Regulator |
 
 ---
 
-## 🛠️ প্রয়োজনীয় সরঞ্জাম (Required Tools)
+## 🛠️ Required Tools
 
-রোবটটি তৈরি করতে আপনার নিচের সরঞ্জামগুলো প্রয়োজন হবে:
-1. **সোল্ডারিং আয়রন (Soldering Iron)**: সার্কিট কানেকশনের জন্য।
-2. **জাম্পার ওয়ায়ার (Jumper Wires)**: পিন টু পিন কানেকশন দেওয়ার জন্য।
-3. **গ্লু গান (Glue Gun)**: পার্টসগুলো বডির সাথে আটকানোর জন্য।
-4. **স্ক্রু ড্রাইভার সেট**: মোটর এবং চেসিস ফিটিং করার জন্য।
-5. **ল্যাপটপ/পিসি**: কোড আপলোড এবং কনফিগার করার জন্য।
+To build this robot, you will need the following tools:
+1. **Soldering Iron**: For electrical connections.
+2. **Jumper Wires**: For breadboard/pin connections.
+3. **Glue Gun**: For mounting components to the body.
+4. **Screwdriver Set**: For motors and chassis assembly.
+5. **Laptop/PC**: For code uploading and configuration.
 
 ---
 
-## 💰 Estimated Build Cost (Anumanik khoroch)
+## 💰 Estimated Build Cost
 
 Building Vextor is affordable! Here is a rough estimate:
 - **Major Components** (ESP32, OLED, Motor Driver, Motors): ~$10 - $15
 - **Sensors & Audio** (HC-SR04, I2S Amp, Mic, Servo): ~$8 - $12
 - **Structure & Misc** (Battery, Wires, Chassis, Glue): ~$5 - $10
-- **Total**: Approx **$25 - $40 (৳৩০০০ - ৳৪৫০০)** depending on where you buy.
+- **Total**: Approx **$25 - $40** depending on where you buy.
 
 ---
 
@@ -169,8 +173,10 @@ Follow the pin definitions in `src/config/config.h`:
 - **OLED**: SDA (23), SCL (18) *(Software SPI provided in code)*
 - **I2S Speaker**: BCLK (19), LRC (21), DIN (2)
 - **I2S Mic**: BCLK (14), WS (15), DATA (22)
-- **Servo**: Pin 13
-- **Motors**: Pins 27, 26, 25, 33
+- **Pan-Tilt Servos**: Pan (13), Tilt (12)
+- **4WD Motors**: 
+  - Left Side (Front+Back): Pins 27, 26
+  - Right Side (Front+Back): Pins 25, 33
 - **Sensors**: Trig (4), Echo (34), IR-L (35), IR-R (32)
 
 ### 2. Firmware Upload
@@ -186,8 +192,8 @@ Follow the pin definitions in `src/config/config.h`:
 
 ## 📖 Usage & Interaction
 
-- **Persona**: Vextor doesn't follow orders blindly. He has "attitude". Treat him with respect (especially if you are a boy) or he might get `ANGRY`.
-- **Bengali Speech**: He is optimized for Bengali. Type in Bengali and he will reply with his native charm.
+- **Persona**: Vextor doesn't follow orders blindly. He has "attitude". Treat him with respect or he might get `ANGRY`.
+- **Speech**: He is optimized for English and Bengali. Type in either language and he will respond accordingly.
 - **Manual Overrides**: Use the Web UI Remote Control to drive him manually when AI isn't needed.
 
 ---
@@ -266,7 +272,7 @@ graph TD
 
 ---
 
-## 🌐 Web UI features (Bistarito)
+## 🌐 Web UI features (Detailed)
 
 The Vextor Web Dashboard is a self-hosted, dark-mode command center reachable via any browser on the same WiFi network:
 
@@ -279,7 +285,7 @@ The Vextor Web Dashboard is a self-hosted, dark-mode command center reachable vi
 
 ---
 
-## 🗺️ Future Roadmap (Notun Potential Features)
+## 🗺️ Future Roadmap
 
 We are constantly evolving! Here is what's coming next:
 
@@ -302,9 +308,10 @@ We are constantly evolving! Here is what's coming next:
 | **Speaker** | 19 | BCLK | I2S Bit Clock |
 | **Speaker** | 21 | LRC | I2S Word Select |
 | **Speaker** | 2 | DIN | I2S Data |
-| **Servo** | 13 | PWM | Head Control |
-| **Motor A** | 27, 26| IN1, IN2| Left Wheels |
-| **Motor B** | 25, 33| IN3, IN4| Right Wheels |
+| **Servo Pan** | 13 | PWM | Left-Right Control |
+| **Servo Tilt**| 12 | PWM | Up-Down Control |
+| **Motor Left** | 27, 26| IN1, IN2| Left Front & Back |
+| **Motor Right**| 25, 33| IN3, IN4| Right Front & Back |
 | **HC-SR04** | 4 | Trig | Sonar Burst |
 | **HC-SR04** | 34 | Echo | Distance Return |
 | **IR Left** | 35 | Sig | Edge Detect |
@@ -312,7 +319,7 @@ We are constantly evolving! Here is what's coming next:
 
 ---
 
-## 🛠️ Troubleshooting (Somoy bachanur tips)
+## 🛠️ Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
@@ -323,12 +330,12 @@ We are constantly evolving! Here is what's coming next:
 
 ---
 
-## ⚠️ Safety & Handling (সতর্কতা)
+## ⚠️ Safety & Handling
 
-- **Power Supply**: রোবটটিকে পাওয়ার দিতে ভালো মানের ৩.৭ভোল্ট ৩০০০mAh+ লিথিয়াম ব্যাটারি ব্যবহার করুন। নিম্নমানের ব্যাটারি রোবটকে বারবার রিস্টার্ট দিতে পারে।
-- **Heat Dissipation**: ESP32 অনেকক্ষণ কাজ করলে গরম হতে পারে, তাই রোবটের ভেতরে বাতাস চলাচলের জায়গা রাখুন।
-- **Static Grounding**: OLED এবং Microphone সেন্সরগুলো অনেক সেনসিটিভ, তাই খালি হাতে পিন ধরার সময় সতর্ক থাকুন।
-- **Water Proofing**: যেহেতু এটি ইলেকট্রনিক প্রজেক্ট, জল থেকে দূরে রাখুন।
+- **Power Supply**: Use high-quality 3.7V 3000mAh+ Lithium batteries. Low-quality batteries may cause constant restarts.
+- **Heat Dissipation**: The ESP32 can get warm during long sessions; ensure adequate ventilation within the robot body.
+- **Static Grounding**: OLED and Microphone sensors are highly sensitive; handle with care and avoid touching pins directly.
+- **Waterproofing**: This is an electronic project; keep it away from water and high humidity.
 
 ---
 
@@ -343,7 +350,7 @@ Unlike most robots that move eyes constantly, Vextor uses a **Probability-Based 
 ### 👄 Voice-Mouth Synchronization
 Instead of random flapping, the mouth animation uses **Time-Estimated Duration Mapping**:
 - The response text length is calculated.
-- We apply an 85ms/character multiplier (optimized for Bengali speech rate).
+- We apply an 85ms/character multiplier (optimized for average speech rates).
 - The `isTalkingNow` flag triggers a 4-frame cycling animation that matches the average speed of neural voice playback.
 
 ---
