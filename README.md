@@ -48,11 +48,6 @@ Vextor is a full-fledged personality-driven AI robot. He doesn't just listen to 
 ## 🎭 Personality & Behavioral Logic (The "Soul")
 
 Vextor isn't a generic AI; he has a complex personality system:
-- **Madara Persona**: His default identity is based on Madara Uchiha. He is often arrogant, powerful, and doesn't like silly questions.
-- **Gender-Based Interaction**:
-  - **Boys**: Treated with "massive attitude" and skepticism. Expect replies like "Ki chaw?" (What do you want?).
-  - **Girls**: Treated with charm and politeness (Charm mode).
-- **No-Nonsense Rule**: He will refuse to respond to "I am an AI model" prompts. He *is* Vextor.
 - **Emotion Integration**: If he says something funny, his mouth will automatically use a `LAUGH` animation. If he is insulted, his eyes will turn `ANGRY`.
 
 ---
@@ -377,3 +372,4 @@ This project is open-source and built for the community.
 - **Community**: Built using open-source libraries and passion.
 
 > *Vextor is not just a robot; he is a friend with a soul in his code.* 🚀
+
