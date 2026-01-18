@@ -1,10 +1,78 @@
 # 🤖 Vextor AI (Vex) - Advanced ESP32 Identity Robot
 
+![Vextor Hero](docs/images/vextor_hero.png)
+
 ![Vextor Status](https://img.shields.io/badge/Status-Active-brightgreen) ![ESP32](https://img.shields.io/badge/Platform-ESP32-blue) ![Gemini AI](https://img.shields.io/badge/AI-Google%20Gemini-orange) ![WebUI](https://img.shields.io/badge/Interface-Premium%20Web-blueviolet)
 
 > **"Meow! I am Vextor. A curious and expressive AI cat robot created by Master Mahdi."**
 
 Vextor (Vex) is a professional-grade, open-source AI companion powered by the **ESP32**. It leverages **Google Gemini AI** for advanced reasoning, **Web Speech API** for natural voice interaction, and a custom **Procedural Graphics Engine** for lifelike emotional expressions.
+
+---
+
+## 🧠 System Intelligence & Logic
+
+Vextor's brain operates on a sophisticated state machine, balancing autonomous curiosity with real-time user interaction.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> 💤_Idle: Power On
+    💤_Idle --> 👂_Listening: User Detected
+    👂_Listening --> 🧠_Thinking: Capture Input
+    🧠_Thinking --> 🧠_Thinking: Gemini AI Processing
+    🧠_Thinking --> 🎭_Acting: Response Ready
+    🎭_Acting --> 🎭_Acting: Movement + Emotion + Speech
+    🎭_Acting --> 💤_Idle: Complete
+    🎭_Acting --> 🧠_Thinking: Continuous Dialogue
+    💤_Idle --> 😴_DeepSleep: Inactive
+    😴_DeepSleep --> 💤_Idle: Interaction
+```
+
+---
+
+## 🏗️ Interactive Architecture
+
+The following diagram illustrates how the Premium Web Dashboard, Cloud AI, and ESP32 Hardware layers interact seamlessly.
+
+```mermaid
+graph TD
+    subgraph "Interface Layer"
+        User((User))
+        WebUI[Premium Web Dashboard]
+        WS[WebSocket Stream]
+    end
+
+    subgraph "Core Intelligence (ESP32)"
+        Logic[Behavioral Logic Engine]
+        AI[AI Comm Manager]
+        Sensors[Sensors Array]
+    end
+
+    subgraph "Execution Layer"
+        Eyes[Procedural Eye Graphics]
+        Body[4WD Movement Control]
+        Voice[TTS Voice Synthesis]
+    end
+
+    User <--> WebUI
+    WebUI <--> WS
+    WS <--> AI
+    AI <--> Gemini[Google Gemini AI]
+    AI --> Logic
+    Logic --> Eyes
+    Logic --> Body
+    Logic --> Voice
+    Sensors --> Logic
+```
+
+---
+
+## 📱 Premium Control Interface
+
+![Vextor UI Mockup](docs/images/vextor_ui.png)
+
+Vextor features a high-performance web dashboard with real-time feedback, system diagnostics, and emotional monitoring.
 
 ---
 
