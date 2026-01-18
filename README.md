@@ -144,9 +144,9 @@ graph TB
     BehaviorEngine <-->|Auto Mode| AutopilotAI
     BehaviorEngine -->|Parse| TagParser
     
-    TagParser -->|[EMOTION]| EmotionCtrl
-    TagParser -->|[MOVE]| MotorCtrl
-    TagParser -->|[HEAD]| ServoCtrl
+    TagParser -->|"EMOTION Tag"| EmotionCtrl
+    TagParser -->|"MOVE Tag"| MotorCtrl
+    TagParser -->|"HEAD Tag"| ServoCtrl
     
     SensorMgr -->|Distance| AutopilotAI
     SensorMgr -->|Proximity| BehaviorEngine
