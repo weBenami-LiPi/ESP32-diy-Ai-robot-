@@ -15,18 +15,51 @@ Vextor (Vex) is a professional-grade, open-source AI companion powered by the **
 Vextor's brain operates on a sophisticated state machine, balancing autonomous curiosity with real-time user interaction.
 
 ```mermaid
+---
+config:
+  theme: dark
+  themeVariables:
+    primaryColor: '#BB86FC'
+    primaryTextColor: '#fff'
+    primaryBorderColor: '#03DAC6'
+    lineColor: '#03DAC6'
+    secondaryColor: '#03DAC6'
+    tertiaryColor: '#CF6679'
+---
 stateDiagram-v2
     direction LR
-    [*] --> 💤_Idle: Power On
-    💤_Idle --> 👂_Listening: User Detected
-    👂_Listening --> 🧠_Thinking: Capture Input
-    🧠_Thinking --> 🧠_Thinking: Gemini AI Processing
-    🧠_Thinking --> 🎭_Acting: Response Ready
-    🎭_Acting --> 🎭_Acting: Movement + Emotion + Speech
-    🎭_Acting --> 💤_Idle: Complete
-    🎭_Acting --> 🧠_Thinking: Continuous Dialogue
-    💤_Idle --> 😴_DeepSleep: Inactive
-    😴_DeepSleep --> 💤_Idle: Interaction
+    
+    [*] --> Boot: Power On
+    Boot --> WiFiSetup: Initialize System
+    WiFiSetup --> Idle: WiFi Connected
+    WiFiSetup --> APMode: No Network
+    APMode --> Idle: User Config
+    
+    Idle --> Autopilot: No User (30s)
+    Idle --> Listening: Voice/Touch
+    
+    Autopilot --> Scanning: Look Around
+    Scanning --> ObstacleFound: Sensor Alert
+    Scanning --> Autopilot: Path Clear
+    ObstacleFound --> Reacting: Avoid/Curious
+    Reacting --> Autopilot: Done
+    Autopilot --> Idle: User Detected
+    
+    Listening --> Processing: Capture Input
+    Processing --> AIThinking: Send to Gemini
+    AIThinking --> AIThinking: Cloud Processing
+    AIThinking --> ResponseReady: JSON Received
+    AIThinking --> ErrorState: API Timeout
+    ResponseReady --> Executing: Parse Tags
+    Executing --> EmotionUpdate: [EMOTION]
+    Executing --> HeadMove: [YES]/[NO]
+    Executing --> SpeakOut: TTS Output
+    EmotionUpdate --> Executing: Update Eyes
+    HeadMove --> Executing: Servo Move
+    SpeakOut --> Listening: Continue
+    SpeakOut --> Idle: End Chat
+    
+    ErrorState --> Idle: Fallback
 ```
 
 ---
@@ -36,34 +69,118 @@ stateDiagram-v2
 The following diagram illustrates how the Premium Web Dashboard, Cloud AI, and ESP32 Hardware layers interact seamlessly.
 
 ```mermaid
-graph TD
-    subgraph "Interface Layer"
-        User((User))
-        WebUI[Premium Web Dashboard]
-        WS[WebSocket Stream]
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#BB86FC','primaryTextColor':'#fff','primaryBorderColor':'#03DAC6','lineColor':'#03DAC6','secondaryColor':'#3700B3','tertiaryColor':'#CF6679'}}}%%
+graph TB
+    %% User Interface Layer
+    subgraph UI["🌐 User Interface Layer"]
+        User([👤 User])
+        Browser[🖥️ Web Browser]
+        Dashboard[📱 Premium Dashboard]
+        VoiceInput[🎤 Voice Input]
     end
-
-    subgraph "Core Intelligence (ESP32)"
-        Logic[Behavioral Logic Engine]
-        AI[AI Comm Manager]
-        Sensors[Sensors Array]
+    
+    %% Network Layer
+    subgraph NET["📡 Network Layer"]
+        WiFi[WiFi AP/Client]
+        WS[⚡ WebSocket]
+        HTTP[🌍 HTTP Server]
     end
-
-    subgraph "Execution Layer"
-        Eyes[Procedural Eye Graphics]
-        Body[4WD Movement Control]
-        Voice[TTS Voice Synthesis]
+    
+    %% Application Layer
+    subgraph APP["⚙️ Application Layer"]
+        Router[Request Router]
+        APIManager[🔗 Gemini API]
+        SessionMgr[💾 Session Mgr]
     end
-
-    User <--> WebUI
-    WebUI <--> WS
-    WS <--> AI
-    AI <--> Gemini[Google Gemini AI]
-    AI --> Logic
-    Logic --> Eyes
-    Logic --> Body
-    Logic --> Voice
-    Sensors --> Logic
+    
+    %% Logic Layer
+    subgraph LOGIC["🧠 Business Logic Layer"]
+        BehaviorEngine[Behavior Engine]
+        EmotionCtrl[😊 Emotion Ctrl]
+        ChatMemory[💬 Chat Memory]
+        AutopilotAI[🤖 Autopilot]
+        TagParser[🏷️ Tag Parser]
+    end
+    
+    %% Hardware Abstraction
+    subgraph HAL["🔧 Hardware Abstraction"]
+        MotorCtrl[🚗 Motor Ctrl]
+        ServoCtrl[↔️ Servo Ctrl]
+        DisplayCtrl[📺 Display Ctrl]
+        SensorMgr[📡 Sensor Mgr]
+    end
+    
+    %% Physical Hardware
+    subgraph HW["⚡ Hardware Layer"]
+        Motors[4x DC Motors]
+        Servo[Pan-Tilt Servo]
+        OLED[128x64 OLED]
+        Ultrasonic[HC-SR04]
+        IR[2x IR Sensors]
+    end
+    
+    %% Cloud
+    Cloud[☁️ Google Gemini AI]
+    
+    %% Connections with labels
+    User -->|Voice/Text| Browser
+    Browser -->|WebUI| Dashboard
+    Browser -->|Audio| VoiceInput
+    Dashboard <-->|Real-time| WS
+    VoiceInput -->|Stream| WS
+    WS <-->|Network| WiFi
+    HTTP <-->|Config| WiFi
+    
+    WiFi -->|Route| Router
+    Router <-->|API Call| APIManager
+    Router -->|Sessions| SessionMgr
+    
+    APIManager <-->|HTTPS| Cloud
+    APIManager -->|Response| BehaviorEngine
+    SessionMgr -->|Context| BehaviorEngine
+    
+    BehaviorEngine <-->|State| EmotionCtrl
+    BehaviorEngine <-->|History| ChatMemory
+    BehaviorEngine <-->|Auto Mode| AutopilotAI
+    BehaviorEngine -->|Parse| TagParser
+    
+    TagParser -->|[EMOTION]| EmotionCtrl
+    TagParser -->|[MOVE]| MotorCtrl
+    TagParser -->|[HEAD]| ServoCtrl
+    
+    SensorMgr -->|Distance| AutopilotAI
+    SensorMgr -->|Proximity| BehaviorEngine
+    
+    EmotionCtrl -->|Graphics| DisplayCtrl
+    AutopilotAI -->|Navigate| MotorCtrl
+    
+    MotorCtrl -->|PWM| Motors
+    ServoCtrl -->|Signal| Servo
+    DisplayCtrl -->|SPI| OLED
+    SensorMgr -->|Read| Ultrasonic
+    SensorMgr -->|Read| IR
+    
+    %% Feedback
+    DisplayCtrl -.->|Status| WS
+    MotorCtrl -.->|State| WS
+    SensorMgr -.->|Data| WS
+    
+    %% Styling
+    classDef uiStyle fill:#BB86FC,stroke:#03DAC6,stroke-width:2px,color:#fff
+    classDef netStyle fill:#3700B3,stroke:#03DAC6,stroke-width:2px,color:#fff
+    classDef appStyle fill:#6200EE,stroke:#03DAC6,stroke-width:2px,color:#fff
+    classDef logicStyle fill:#018786,stroke:#03DAC6,stroke-width:2px,color:#fff
+    classDef halStyle fill:#CF6679,stroke:#03DAC6,stroke-width:2px,color:#fff
+    classDef hwStyle fill:#B00020,stroke:#03DAC6,stroke-width:2px,color:#fff
+    classDef cloudStyle fill:#03DAC6,stroke:#BB86FC,stroke-width:3px,color:#000
+    
+    class User,Browser,Dashboard,VoiceInput uiStyle
+    class WiFi,WS,HTTP netStyle
+    class Router,APIManager,SessionMgr appStyle
+    class BehaviorEngine,EmotionCtrl,ChatMemory,AutopilotAI,TagParser logicStyle
+    class MotorCtrl,ServoCtrl,DisplayCtrl,SensorMgr halStyle
+    class Motors,Servo,OLED,Ultrasonic,IR hwStyle
+    class Cloud cloudStyle
 ```
 
 ---
