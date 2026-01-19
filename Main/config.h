@@ -10,7 +10,7 @@ extern const char *password;
 // IPS/OLED Display (SPI 7-Pin Mode)
 #define OLED_MOSI 23 // Connect to SDA/MOSI
 #define OLED_CLK 18  // Connect to SCL/SCK
-#define OLED_DC 2    // Data/Command pin
+#define OLED_DC 5    // Data/Command pin (MOVED from 2 to 5)
 #define OLED_CS 15   // Chip Select
 #define OLED_RESET 4 // Reset pin
 
@@ -26,21 +26,42 @@ extern const char *password;
 #define MOTOR_ENB 14 // PWM Speed for Right Motors
 
 // Servo & Distance Sensor
-#define SERVO_PIN 13 // Head/Sensor Pan-Tilt Servo
-#define TRIG_PIN 22  // Ultrasonic Trigger
-#define ECHO_PIN 21  // Ultrasonic Echo
+#define SERVO_PIN 13      // Head/Sensor Pan-Tilt Servo
+#define SERVO_MIN_ANGLE 0 // Minimum safe angle for SG90
+#define SERVO_MAX_ANGLE                                                        \
+  160               // Maximum safe angle (reduced from 180 to prevent damage)
+#define TRIG_PIN 22 // Ultrasonic Trigger
+#define ECHO_PIN 21 // Ultrasonic Echo
 
-// Infrared Edge/Side Sensors (IR Proximity)
-// These detect if someone touches the robot's side or if it's near a table
-// edge.
-#define IR_LEFT 34  // Connect to OUT of Left IR Module
-#define IR_RIGHT 35 // Connect to OUT of Right IR Module
+// Infrared Front/Back Sensors (IR Proximity)
+// These detect if someone is in front or behind the robot.
+#define IR_FRONT 34 // Connect to OUT of Front IR Module
+#define IR_BACK 35  // Connect to OUT of Back IR Module
 
 // INMP441 I2S Digital Microphone
-#define I2S_SCK 5
+#define I2S_SCK 16 // MOVED from 5 to 16 (RX2)
 #define I2S_WS 19
-#define I2S_SD 12
+#define I2S_SD 17 // MOVED from 12 to 17 (TX2)
 
 extern bool autoPilotActive;
+
+// Autonomous Mood Probabilities (%)
+#define AUTONOMOUS_NEUTRAL_WEIGHT 50 // Normal mood - 50% of time
+#define AUTONOMOUS_LOVE_WEIGHT 5     // Affectionate mood - 5% of time
+#define AUTONOMOUS_OTHER_WEIGHT 45   // Other emotions - 45% of time
+
+// Dynamic Emotion State
+// TODO: Task List
+// - [x] Update Web Server Logic
+// - [x] Add LED toggle in `web_server_manager.h`
+// - [x] Verification
+//   - [x] Create walkthrough.mdp
+extern float emotionIntensity;          // 0.0 to 100.0
+extern unsigned long lastEmotionUpdate; // Timestamp of last decay check
+extern int targetPupilX, targetPupilY;
+extern int targetEyeHeight;
+extern bool isTalkingNow;
+
+#define ONBOARD_LED 2 // Built-in Blue LED on most ESP32 boards
 
 #endif

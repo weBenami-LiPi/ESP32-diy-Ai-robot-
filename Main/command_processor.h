@@ -3,11 +3,12 @@
 
 #include "bitmaps.h"
 #include "hardware_ctrl.h"
+#include "life_engine.h"
 #include "logger.h"
 #include <Arduino.h>
 
 extern int robotSpeed;
-extern void setEmotion(Emotion e);
+extern void setEmotion(Emotion e, bool isHighPriority);
 extern void setHeadAngle(int angle);
 extern bool autoPilotActive;
 extern bool inhibitAutopilot; // Global flag
@@ -63,82 +64,86 @@ public:
 
     // Emotion Commands (16)
     if (containsAny(msg, {"নিউট্রাল", "neutral", "normal face"})) {
-      setEmotion(NEUTRAL);
+      setEmotion(NEUTRAL, true);
       logLoc("CMD: Emotion - Neutral");
       return true;
     }
     if (containsAny(msg, {"ভালোবাসা", "love", "heart"})) {
-      setEmotion(LOVE);
+      setEmotion(LOVE, true);
+      Life.modifyMood(10.0);
       logLoc("CMD: Emotion - Love");
       return true;
     }
     if (containsAny(msg, {"হাসো", "হাস", "laugh", "smile", "happy"})) {
-      setEmotion(LAUGH);
+      setEmotion(LAUGH, true);
+      Life.modifyMood(5.0);
       logLoc("CMD: Emotion - Laugh");
       return true;
     }
     if (containsAny(msg, {"ঘুমাও", "ঘুম", "sleep", "sleepy"})) {
-      setEmotion(SLEEP);
+      setEmotion(SLEEP, true);
       logLoc("CMD: Emotion - Sleep");
       return true;
     }
     if (containsAny(msg, {"চোখ মারো", "wink"})) {
-      setEmotion(WINK);
+      setEmotion(WINK, true);
       logLoc("CMD: Emotion - Wink");
       return true;
     }
     if (containsAny(msg, {"দুষ্টু", "evil", "mischievous"})) {
-      setEmotion(MISCHIEVOUS);
+      setEmotion(MISCHIEVOUS, true);
       logLoc("CMD: Emotion - Evil");
       return true;
     }
     if (containsAny(msg, {"রাগ", "rage", "angry"})) {
-      setEmotion(ANGRY_RAGE);
+      setEmotion(ANGRY_RAGE, true);
+      Life.modifyMood(-15.0);
       logLoc("CMD: Emotion - Rage");
       return true;
     }
     if (containsAny(msg, {"শক", "shocked", "surprised"})) {
-      setEmotion(SHOCKED);
+      setEmotion(SHOCKED, true);
       logLoc("CMD: Emotion - Shocked");
       return true;
     }
     if (containsAny(msg, {"দুঃখ", "দুখ", "sad"})) {
-      setEmotion(SAD);
+      setEmotion(SAD, true);
+      Life.modifyMood(-10.0);
       logLoc("CMD: Emotion - Sad");
       return true;
     }
     if (containsAny(msg, {"মৃত", "dead"})) {
-      setEmotion(DEAD);
+      setEmotion(DEAD, true);
       logLoc("CMD: Emotion - Dead");
       return true;
     }
     if (containsAny(msg, {"ঝিমঝিম", "dizzy", "confused"})) {
-      setEmotion(DIZZY);
+      setEmotion(DIZZY, true);
       logLoc("CMD: Emotion - Dizzy");
       return true;
     }
     if (containsAny(msg, {"পার্টি", "party", "celebrate"})) {
-      setEmotion(PARTY);
+      setEmotion(PARTY, true);
       logLoc("CMD: Emotion - Party");
       return true;
     }
     if (containsAny(msg, {"সন্দেহ", "skeptical", "doubt"})) {
-      setEmotion(SKEPTICAL);
+      setEmotion(SKEPTICAL, true);
       logLoc("CMD: Emotion - Skeptical");
       return true;
     }
     if (containsAny(msg, {"হতাশ", "frustrated"})) {
-      setEmotion(FRUSTRATED);
+      setEmotion(FRUSTRATED, true);
       logLoc("CMD: Emotion - Frustrated");
       return true;
     }
     if (containsAny(msg, {"ফেরেশতা", "angel", "innocent"})) {
-      setEmotion(ANGEL);
+      setEmotion(ANGEL, true);
       logLoc("CMD: Emotion - Angel");
       return true;
     }
     if (containsAny(msg, {"কান্না", "crying", "cry"})) {
-      setEmotion(CRYING);
+      setEmotion(CRYING, true);
       logLoc("CMD: Emotion - Crying");
       return true;
     }
@@ -214,12 +219,12 @@ public:
       return true;
     }
     if (containsAny(msg, {"জেগে ওঠো", "wake up", "wake"})) {
-      setEmotion(WAKE_UP);
+      setEmotion(WAKE_UP, true);
       logLoc("CMD: Wake Up");
       return true;
     }
     if (containsAny(msg, {"স্লিপ মোড", "sleep mode"})) {
-      setEmotion(SLEEP);
+      setEmotion(SLEEP, true);
       moveRobot("STOP");
       logLoc("CMD: Sleep Mode");
       return true;
@@ -249,6 +254,21 @@ public:
       return true;
     }
 
+    if (containsAny(msg, {"touch off", "disable touch", "সেন্সর বন্ধ"})) {
+      extern bool touchEnabled;
+      touchEnabled = false;
+      logLoc("CMD: Touch Disabled");
+      setEmotion(NEUTRAL, true);
+      return true;
+    }
+    if (containsAny(msg, {"touch on", "enable touch", "সেন্সর চালু"})) {
+      extern bool touchEnabled;
+      touchEnabled = true;
+      logLoc("CMD: Touch Enabled");
+      setEmotion(LAUGH, true);
+      return true;
+    }
+
     // Special Action Commands (5+)
     if (containsAny(msg, {"নাচো", "নাচ", "dance"})) {
       performDance();
@@ -256,12 +276,12 @@ public:
       return true;
     }
     if (containsAny(msg, {"সেলিব্রেট", "celebrate", "victory"})) {
-      setEmotion(PARTY);
+      setEmotion(PARTY, true);
       performCelebration();
       logLoc("CMD: Celebrate");
       return true;
     }
-    if (containsAny(msg, {"হ্যালো বলো", "greet", "say hello"})) {
+    if (containsAny(msg, {"HELLO বলো", "greet", "say hello"})) {
       performGreeting();
       logLoc("CMD: Greet");
       return true;
@@ -300,7 +320,7 @@ private:
   // Head movement actions
   void nodYes() {
     inhibitAutopilot = true;
-    setEmotion(LOVE);
+    setEmotion(LOVE, true);
     // Double-bounce nod
     setHeadAngle(100);
     delay(150);
@@ -316,7 +336,7 @@ private:
 
   void shakeNo() {
     inhibitAutopilot = true;
-    setEmotion(SAD);
+    setEmotion(SAD, true);
     for (int i = 0; i < 3; i++) {
       setHeadAngle(140);
       delay(120);
@@ -345,7 +365,7 @@ private:
 
   // Special actions
   void performDance() {
-    setEmotion(PARTY);
+    setEmotion(PARTY, true);
     // Shuffle
     for (int i = 0; i < 3; i++) {
       moveRobot("LEFT");
@@ -359,11 +379,11 @@ private:
     moveRobot("STOP");
     // Victory pulse
     startPulseBody(true, 100, 2);
-    setEmotion(NEUTRAL);
+    setEmotion(NEUTRAL, true);
   }
 
   void performCelebration() {
-    setEmotion(PARTY);
+    setEmotion(PARTY, true);
     // Hopping effect
     for (int i = 0; i < 3; i++) {
       startPulseBody(true, 50, 1);
@@ -382,40 +402,40 @@ private:
   }
 
   void performGreeting() {
-    setEmotion(LOVE);
+    setEmotion(LOVE, true);
     setHeadAngle(70);
     delay(300);
-    setEmotion(WINK);
+    setEmotion(WINK, true);
     delay(500);
     nodYes();
-    setEmotion(NEUTRAL);
+    setEmotion(NEUTRAL, true);
   }
 
   void performGoodbye() {
-    setEmotion(SAD);
+    setEmotion(SAD, true);
     setHeadAngle(45);
     delay(800);
     setHeadAngle(90);
-    setEmotion(WINK);
+    setEmotion(WINK, true);
     delay(600);
-    setEmotion(NEUTRAL);
+    setEmotion(NEUTRAL, true);
   }
 
   void performSelfiePose() {
-    setEmotion(LOVE);
+    setEmotion(LOVE, true);
     setHeadAngle(120);
     delay(1500);
-    setEmotion(LAUGH);
+    setEmotion(LAUGH, true);
     setHeadAngle(60);
     delay(1500);
-    setEmotion(WINK);
+    setEmotion(WINK, true);
     setHeadAngle(90);
     delay(1500);
-    setEmotion(NEUTRAL);
+    setEmotion(NEUTRAL, true);
   }
 
   void performThinking() {
-    setEmotion(SKEPTICAL);
+    setEmotion(SKEPTICAL, true);
     setHeadAngle(60);
     for (int i = 0; i < 3; i++) {
       startPulseBody(true, 30, 1);
@@ -424,7 +444,7 @@ private:
       delay(500);
     }
     setHeadAngle(90);
-    setEmotion(NEUTRAL);
+    setEmotion(NEUTRAL, true);
   }
 };
 

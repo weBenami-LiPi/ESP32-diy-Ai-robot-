@@ -17,14 +17,12 @@
 WebServer server(80);
 extern unsigned long lastInteractionTime;
 
-// --- Helper Functions ---
-
 void handleRoot() { server.send(200, "text/html; charset=utf-8", INDEX_HTML); }
 
 Emotion getEmotionFromEmoji(String emoji) {
-  if (emoji == "😐")
+  if (emoji == "😐" || emoji == "😶")
     return NEUTRAL;
-  if (emoji == "😍")
+  if (emoji == "😍" || emoji == "❤️" || emoji == "😘")
     return LOVE;
   if (emoji == "😂")
     return LAUGH;
@@ -56,7 +54,19 @@ Emotion getEmotionFromEmoji(String emoji) {
     return CRYING;
   if (emoji == "😲")
     return WAKE_UP;
-  return NEUTRAL;
+  if (emoji == "🔍")
+    return ANIM_SCAN;
+  if (emoji == "⏳")
+    return ANIM_LOADING;
+  if (emoji == "😑")
+    return ANIM_SQUINT;
+  if (emoji == "🥱")
+    return ANIM_TIRED;
+  if (emoji == "😱")
+    return FEAR;
+  if (emoji == "😫")
+    return HUNGRY;
+  return EMO_NONE;
 }
 
 String cleanMessage(String text) {
@@ -112,8 +122,6 @@ Emotion getEmotionFromTag(String tag) {
   return NEUTRAL;
 }
 
-// --- Talk & Chat Handlers ---
-
 bool processAndSpeakOptimized(String text) {
   if (currentEmotion == SLEEP) {
     setEmotion(NEUTRAL);
@@ -130,13 +138,42 @@ bool processAndSpeakOptimized(String text) {
       String segment = text.substring(startIdx, endOfSegment);
       segment.trim();
       if (segment.length() > 0) {
-        String cleanSeg = cleanMessage(segment);
-        if (cleanSeg.length() > 0) {
-          RobotAction act;
-          act.type = ACTION_SIMULATE_TALK;
-          act.durationMs = cleanSeg.length() * 85;
-          tempQueue.push_back(act);
+        // Efficient multi-byte emoji detector (2-4 bytes)
+        Emotion emoFromMsg = EMO_NONE;
+        for (int i = 0; i < segment.length(); i++) {
+          unsigned char c = (unsigned char)segment[i];
+          if (c >= 0x80) { // Potential multi-byte emoji character
+            for (int len = 4; len >= 2; len--) {
+              if (i + len <= segment.length()) {
+                Emotion found =
+                    getEmotionFromEmoji(segment.substring(i, i + len));
+                if (found != EMO_NONE) {
+                  emoFromMsg = found;
+                  i += (len - 1);
+                  break;
+                }
+              }
+            }
+            if (emoFromMsg != EMO_NONE)
+              break;
+          }
         }
+
+        if (emoFromMsg != EMO_NONE) {
+          RobotAction emoAct;
+          emoAct.type = ACTION_SET_EMOTION;
+          emoAct.emotionVal = emoFromMsg;
+          tempQueue.push_back(emoAct);
+        }
+
+        // --- SILENCED FOR LIFE ENGINE (PET MODE) ---
+        // String cleanSeg = cleanMessage(segment);
+        // if (cleanSeg.length() > 0) {
+        //   RobotAction act;
+        //   act.type = ACTION_SIMULATE_TALK;
+        //   act.durationMs = cleanSeg.length() * 85;
+        //   tempQueue.push_back(act);
+        // }
       }
     }
 
@@ -165,7 +202,26 @@ bool processAndSpeakOptimized(String text) {
 
   if (!tempQueue.empty()) {
     for (const auto &act : tempQueue) {
-      globalQueue.push_back(act);
+      // Handle special command triggers for head gestures
+      if (act.type == ACTION_ROBOT_CMD) {
+        if (act.payload == "nod_yes_internal" ||
+            act.payload.indexOf("nod_yes") != -1) {
+          RobotAction gesture;
+          gesture.type = ACTION_ROBOT_CMD;
+          gesture.payload = "nod_yes";
+          globalQueue.push_back(gesture);
+        } else if (act.payload == "shake_no_internal" ||
+                   act.payload.indexOf("shake_no") != -1) {
+          RobotAction gesture;
+          gesture.type = ACTION_ROBOT_CMD;
+          gesture.payload = "shake_no";
+          globalQueue.push_back(gesture);
+        } else {
+          globalQueue.push_back(act);
+        }
+      } else {
+        globalQueue.push_back(act);
+      }
     }
   }
   return true;
@@ -204,25 +260,12 @@ void handleChat() {
   String reply = gemini.askGemini(msg, globalConfig.config.system_prompt);
   logChat("Vextor: " + reply);
 
-  if (reply.indexOf("[YES]") != -1) {
-    RobotAction nod;
-    nod.type = ACTION_ROBOT_CMD;
-    nod.payload = "nod_yes_internal";
-    globalQueue.push_back(nod);
-  } else if (reply.indexOf("[NO]") != -1) {
-    RobotAction shake;
-    shake.type = ACTION_ROBOT_CMD;
-    shake.payload = "shake_no_internal";
-    globalQueue.push_back(shake);
-  }
-
-  String emojiOnly = cleanMessage(reply);
-  emojiOnly.trim();
-  setEmotion(getEmotionFromEmoji(emojiOnly));
+  // Unified Processing: This handles emojis, [YES], [NO], [GLITCH], etc.
+  processAndSpeakOptimized(reply);
 
   StaticJsonDocument<1024> doc;
-  doc["reply"] = emojiOnly;
-  doc["clean_reply"] = emojiOnly;
+  doc["reply"] = reply;
+  doc["clean_reply"] = cleanMessage(reply);
   doc["tts_failed"] = true;
   doc["is_command"] = false;
   String response;
@@ -230,13 +273,19 @@ void handleChat() {
   server.send(200, "application/json", response);
 }
 
-// --- System Control Handlers ---
-
 void handleControl() {
   String dir = server.arg("dir");
   lastInteractionTime = millis();
   logLoc("Control: " + dir);
   moveRobot(dir);
+
+  // Blue LED control: ON for movement, OFF for stop
+  if (dir == "STOP") {
+    digitalWrite(ONBOARD_LED, LOW);
+  } else if (dir != "AUTO") {
+    digitalWrite(ONBOARD_LED, HIGH);
+  }
+
   if (dir == "AUTO") {
     server.send(200, "text/plain", autoPilotActive ? "ON" : "OFF");
   } else {
@@ -260,46 +309,72 @@ void handleEmotion() {
     lastInteractionTime = millis();
     int id = server.arg("id").toInt();
     Emotion target = NEUTRAL;
-    if (id == 0)
+    String emotionName = "UNKNOWN";
+
+    if (id == 0) {
       target = NEUTRAL;
-    else if (id == 1)
+      emotionName = "NEUTRAL";
+    } else if (id == 1) {
       target = LOVE;
-    else if (id == 2)
+      emotionName = "LOVE";
+    } else if (id == 2) {
       target = LAUGH;
-    else if (id == 3)
+      emotionName = "LAUGH";
+    } else if (id == 3) {
       target = SLEEP;
-    else if (id == 4)
+      emotionName = "SLEEP";
+    } else if (id == 4) {
       target = WINK;
-    else if (id == 5)
+      emotionName = "WINK";
+    } else if (id == 5) {
       target = MISCHIEVOUS;
-    else if (id == 6)
-      target = ANGRY_RAGE;
-    else if (id == 7)
-      target = SHOCKED;
-    else if (id == 8)
-      target = SAD;
-    else if (id == 9)
-      target = DEAD;
-    else if (id == 10)
-      target = DIZZY;
-    else if (id == 11)
-      target = PARTY;
-    else if (id == 12)
-      target = SKEPTICAL;
-    else if (id == 13)
+      emotionName = "MISCHIEVOUS";
+    } else if (id == 6) {
       target = FRUSTRATED;
-    else if (id == 14)
+      emotionName = "FRUSTRATED";
+    } else if (id == 7) {
+      target = SHOCKED;
+      emotionName = "SHOCKED";
+    } else if (id == 8) {
+      target = SAD;
+      emotionName = "SAD";
+    } else if (id == 9) {
+      target = DEAD;
+      emotionName = "DEAD";
+    } else if (id == 10) {
+      target = DIZZY;
+      emotionName = "DIZZY";
+    } else if (id == 11) {
+      target = PARTY;
+      emotionName = "PARTY";
+    } else if (id == 12) {
+      target = SKEPTICAL;
+      emotionName = "SKEPTICAL";
+    } else if (id == 13) {
+      target = ANGRY_RAGE;
+      emotionName = "ANGRY_RAGE";
+    } else if (id == 14) {
       target = ANGEL;
-    else if (id == 15)
+      emotionName = "ANGEL";
+    } else if (id == 15) {
       target = CRYING;
-    setEmotion(target);
+      emotionName = "CRYING";
+    } else if (id == 16) {
+      target = FEAR;
+      emotionName = "FEAR";
+    } else if (id == 17) {
+      target = HUNGRY;
+      emotionName = "HUNGRY";
+    }
+
+    Serial.println("Web Emotion Triggered: ID=" + String(id) + " -> " +
+                   emotionName);
+    setEmotion(target, true); // Explicitly set high priority
     server.send(200, "text/plain", "OK");
   } else {
     server.send(400, "text/plain", "Missing id");
   }
 }
-
-// --- Logging & Config Handlers ---
 
 void handleChatLogs() {
   server.send(200, "text/plain", readLogFile("/chat.txt"));
@@ -364,8 +439,6 @@ void handleSystemTest() {
   report += "- Motor OK\n";
   server.send(200, "text/plain", report + "Complete!");
 }
-
-// --- Setup ---
 
 void setupWebServer() {
   server.on("/", handleRoot);

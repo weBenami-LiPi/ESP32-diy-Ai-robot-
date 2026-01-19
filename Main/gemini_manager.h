@@ -18,7 +18,7 @@ public:
     HTTPClient http;
 
     String url = "https://generativelanguage.googleapis.com/v1/models/"
-                 "gemini-2.5-flash:generateContent?key=" +
+                 "gemini-1.5-flash:generateContent?key=" +
                  globalConfig.config.gemini_key;
 
     if (!http.begin(client, url))
