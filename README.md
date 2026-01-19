@@ -439,4 +439,3 @@ The current build uses a significant amount of program memory. If you run out of
 - **Community**: Built with passion and open-source love.
 
 > *"Vextor is not just a robot; he is an optimized companion with a digital soul."* 🚀
-

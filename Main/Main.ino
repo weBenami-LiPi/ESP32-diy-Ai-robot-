@@ -602,13 +602,13 @@ void loop() {
         smartEmotion = (Life.currentMood > 70) ? LOVE : WINK;
         break;
 
-      case BEHAVIOR_RETREAT:
-        // Retreating from danger - show fear
-        smartEmotion = FEAR;
+      case BEHAVIOR_PLAY:
+        // Playing - show playful emotion
+        smartEmotion = PARTY;
         break;
 
-      case BEHAVIOR_IDLE:
-        // Idle/resting - show tired or neutral
+      case BEHAVIOR_REST:
+        // Resting - show tired or neutral
         smartEmotion = (tirednessFactor > 0.7) ? ANIM_TIRED : NEUTRAL;
         break;
 
